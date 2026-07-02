@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.pyc
+
+# Recalc / scratch artifacts
+build/recalc/
+build/tiny.xlsx
+
+# LibreOffice profiles
+.config/
