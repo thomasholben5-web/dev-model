@@ -1,8 +1,7 @@
 # Validation Log & Base-Case Walkthrough
 
-Every figure below is produced by the independent Python shadow model and
-reconciles to the LibreOffice-equivalent recalculated workbook (via the
-`formulas` engine) to <1e-6 relative. See validate.py / scenario_test.py.
+Every figure is produced by the independent Python shadow model and reconciles
+to the recalculated workbook (via the `formulas` engine) to <1e-6 relative.
 
 ## Base-case deal (Meridian Apartments, Austin TX — 200 units)
 
@@ -12,93 +11,46 @@ reconciles to the LibreOffice-equivalent recalculated workbook (via the
 | Net rentable SF | 158,740 |
 | Hold period | 84 months |
 | Refi or sell | Refinance then hold |
-| Construction maturity | month 42 |
-| Refi month | month 42 |
-| Direct costs | $57,842,090 |
-| Development fee | $2,313,684 |
-| Interest reserve | $7,511,212 |
-| Operating reserve | $446,890 |
-| Total development cost | $68,858,303 |
-|   TDC / unit | $344,292 |
-|   TDC / NRSF | $434 |
-| Construction loan | $47,065,443 |
-| Total equity | $21,792,860 |
-| Stabilized NOI (fwd 12mo) | $4,148,156 |
-| Year-1 NOI | $1,838,529 |
-| Value at refi | $89,325,145 |
-| Permanent loan | $49,935,220 |
-| Refi cash distribution | $2,495,262 |
-| Exit value (reassess-on-sale) | $78,872,082 |
+| Growth start month | 2 |
+| Direct costs (budget lines) | $57,142,090 |
+| Construction-period tax (dynamic) | $781,578 |
+| Development fee | $2,285,684 |
+| Interest reserve | $7,574,736 |
+| Operating reserve (recycled) | $487,441 |
+| Total development cost | $69,016,722 |
+|   TDC / unit | $345,084 |
+|   TDC / NRSF | $435 |
+| Stabilized assessed value | $85,613,419 |
+| Year-1 stabilized tax (dynamic) | $791,924 |
+| Construction loan | $47,190,152 |
+| Total equity | $21,826,570 |
+| Stabilized NOI (after tax) | $4,059,404 |
+| Value at refi | $87,435,378 |
+| Permanent loan | $48,878,788 |
+| Refi cash distribution | $1,322,046 |
+| Exit value (yr-7, reassess) | $92,069,131 |
 | Blended exit cap | 5.05% |
-| Net sale proceeds | $27,739,471 |
-| Yield on cost | 6.02% |
-| Development spread | 102 bps |
-| Return on cost (stab) | 6.02% |
-| Levered IRR | 11.27% |
-| Levered MOIC | 1.77x |
-| Unlevered IRR | 9.25% |
-| Unlevered MOIC | 1.61x |
-| Static unlevered IRR | 5.50% |
-| Static unlevered MOIC | 1.33x |
+| Net sale proceeds | $41,617,848 |
+| Yield on cost | 5.88% |
+| Development spread | 88 bps |
+| Levered IRR | 17.12% |
+| Levered MOIC | 2.40x |
+| Unlevered IRR | 11.93% |
+| Unlevered MOIC | 1.84x |
+| Static (no-growth) unlev IRR | 7.95% |
+| Static (no-growth) unlev MOIC | 1.51x |
 
-## Phase validation record
+## Return drivers (why an 89bps going-in spread supports a mid-teens IRR)
 
-| Phase | Module | Status |
-|---|---|---|
-| 01 | Architecture, inputs, unit matrix, budget | PASS |
-| 02 | Timeline engine | PASS |
-| 03 | Cost-curve engine (curves sum to line totals) | PASS |
-| 04 | Construction loan sizing & draws | PASS |
-| 05 | Interest reserve (sequential, non-circular) | PASS |
-| 06 | Unit delivery & lease-up | PASS |
-| 07 | Stabilized operating model + ramp/elevation | PASS |
-| 08 | Property tax engine | PASS |
-| 09 | Permanent loan / refinance + No-Cash-Out | PASS |
-| 10 | Long-term operating cash flow | PASS |
-| 11 | Disposition (reassess closed form) | PASS |
-| 12 | Levered & unlevered cash flows | PASS |
-| 13 | Returns + static reference | PASS |
-| 14 | Dashboard | PASS |
-| 15 | Diagnostics (22 checks) | PASS |
+The development spread measures **going-in** stabilized yield-on-cost vs exit cap
+only. On a ~5% cap, 89bps = ~18% value margin on cost, realized by stabilization.
+The IRR additionally captures ~7 years of rent growth valued at the exit cap, a
+cash-out refinance, interim operating cash flow and leverage. The **static
+(no-growth) unlevered IRR of 7.9%** isolates the merchant-development
+return with growth stripped out.
 
 ## Scenario matrix (workbook recalculated, reconciled to shadow)
 
-| Scenario | Result |
-|---|---|
-| Base (hold 84, refi) | PASS — 0 err cells |
-| Sell during construction (hold 30) | PASS — no refi, con retired at sale |
-| Sell at maturity (hold 42) | PASS — no refi |
-| Refi just past maturity (hold 43) | PASS — refi engaged |
-| Long hold (hold 180) | PASS |
-| Max hold (hold 360) | PASS |
-| No-Cash-Out on | PASS — net cash at refi = 0 |
-| Reassess-on-sale off | PASS |
-| Pari-passu funding | PASS |
-| Lender reserve override | PASS |
-
-## Final checklist
-
-- [x] Zero Excel formula errors
-- [x] Zero diagnostic failures
-- [x] Construction draw schedule reconciles
-- [x] Development budget fully allocated
-- [x] Cost curves sum exactly to totals
-- [x] Interest reserve reconciles
-- [x] Construction loan balance reconciles monthly
-- [x] Permanent loan sizing reconciles
-- [x] Permanent loan retires construction loan
-- [x] No-Cash-Out toggle functions
-- [x] Refi-or-sell switch correct both sides of maturity
-- [x] Lease-up reaches stabilized occupancy
-- [x] Operating statements reconcile
-- [x] Lease-up ramp & elevation apply
-- [x] Operating reserve = peak shortfall
-- [x] Property valuation reconciles to NOI & cap
-- [x] Reassess-on-sale closed form reconciles
-- [x] Disposition proceeds reconcile
-- [x] Levered cash flow reconciles
-- [x] Unlevered cash flow reconciles
-- [x] Levered & Unlevered IRR reconcile
-- [x] Levered & Unlevered MOIC reconcile
-- [x] Hold-period toggle functions 1..360
-- [x] Dashboard updates automatically
+All 10 scenarios PASS with 0 error cells: base; sell during construction (hold 30);
+sell at maturity (42); refi just past maturity (43); long hold (180); max hold (360);
+No-Cash-Out on; reassess-on-sale off; pari-passu funding; lender reserve override.

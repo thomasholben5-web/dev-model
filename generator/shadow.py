@@ -22,9 +22,13 @@ def _months_in(y, m):
     return (_dt.date(y + (m // 12), (m % 12) + 1, 1) - _dt.date(y, m, 1)).days
 
 
+def to_date(v):
+    return v if isinstance(v, _dt.date) else _dt.date.fromisoformat(str(v))
+
+
 def days_in_month(inception_date, p):
     """Actual days in calendar month of period p (1-based)."""
-    d0 = _dt.date.fromisoformat(inception_date)
+    d0 = to_date(inception_date)
     y = d0.year + (d0.month - 1 + p - 1) // 12
     m = (d0.month - 1 + p - 1) % 12 + 1
     return _months_in(y, m)
@@ -140,6 +144,22 @@ def compute(overrides=None, want_static=True):
         for p in range(1, N + 1):
             spend[p] += arr[p]
 
+    # ---- Dynamic construction-period property tax -------------------------
+    # Capitalized development cost from Initial Closing until Stabilization,
+    # assessed on land + cumulative hard-cost put in place x effective rate.
+    eff_tax = V["TaxLevyPct"] * V["TaxAssessmentPct"] * V["TaxValueAdjFactor"]
+    close_m0 = ms["Initial Closing"]["start"]
+    hard_labels = [ln["label"] for ln in lines if ln["group"] == "Hard"]
+    cum_hard = [0.0] * (N + 1)
+    con_tax = [0.0] * (N + 1)
+    run = 0.0
+    for p in range(1, N + 1):
+        run += sum(line_spend[l][p] for l in hard_labels)
+        cum_hard[p] = run
+        if close_m0 <= p < stab_month:
+            con_tax[p] = (V["LandCost"] + cum_hard[p]) * eff_tax / 12.0
+    con_tax_total = sum(con_tax)
+
     # Dev fee spread straight-line across Initial Closing..Stabilization.
     fee_s = ms["Initial Closing"]["start"]
     fee_e = ms["Stabilization"]["start"]
@@ -165,8 +185,13 @@ def compute(overrides=None, want_static=True):
         leased[p] = l
         occ[p] = l / total_units if total_units else 0.0
 
+    # Growth clock: monthly compounding anchored at the Growth Start date.
+    inc_d = to_date(V["InceptionDate"])
+    gs_d = to_date(V["GrowthStartDate"])
+    growth_start_month = (gs_d.year - inc_d.year) * 12 + (gs_d.month - inc_d.month) + 1
+
     def gf(rate, p):
-        return (1.0 + rate) ** year_index(p)
+        return (1.0 + rate) ** (max(0, p - growth_start_month) / 12.0)
 
     # Revenue / expense / NOI (before property tax and after)
     gpr = [0.0] * (N + 1)
@@ -222,28 +247,46 @@ def compute(overrides=None, want_static=True):
         payroll = mo(perunit["payroll"]) * ge * elev
         advertising = mo(perunit["advertising"]) * ge * elev
         mgmt_fee = V["MgmtFeePct"] * egi_p
-        # Property tax
-        yrs_from_stab = max(0, year_index(p) - year_index(stab_month))
-        if V["TaxMethodValue"] >= 1:
-            tax_annual = V["TaxYear1"] * ((1 + V["GrowthTax"]) ** yrs_from_stab)
-        else:
-            eff = V["TaxLevyPct"] * V["TaxAssessmentPct"] * V["TaxValueAdjFactor"]
-            noibt_annual_ref = (gpr_p * stab_occ - vacancy) * 12  # rough proxy, non-circular
-            val = max(0.0, noibt_annual_ref) / V["EntryCapRate"] if V["EntryCapRate"] else 0
-            tax_annual = val * eff
-        tax_m = tax_annual / 12.0
-        op_tax[p] = tax_m
         opex_noturn = (insurance + admin + utilities + rm + turnover + contract
                        + payroll + advertising + mgmt_fee)
-        opex_total[p] = opex_noturn + tax_m
         noi_bt[p] = egi_p - opex_noturn            # before property tax
-        noi[p] = noi_bt[p] - tax_m                 # after property tax
         below[p] = (V["CapReservePerUnit"] * total_units / 12.0
                     + V["TaxPrepPerUnit"] * total_units / 12.0
                     + V["AssetMgmtFeePct"] * egi_p)
 
     def fwd12(arr, start):
         return sum(arr[p] for p in range(start + 1, start + 13) if 1 <= p <= N)
+
+    # ---- Dynamic Year-1 property tax (non-circular: from NOI-before-tax) ---
+    eff_tax = V["TaxLevyPct"] * V["TaxAssessmentPct"] * V["TaxValueAdjFactor"]
+    stab_noi_bt = fwd12(noi_bt, stab_month - 1)    # 12mo NOI-before-tax from stab
+    assessed_value_stab = (stab_noi_bt / (V["EntryCapRate"] + eff_tax)
+                           if (V["EntryCapRate"] + eff_tax) else 0.0)
+    tax_year1 = (V["TaxYear1Override"] if V["TaxYear1Override"] > 0
+                 else assessed_value_stab * eff_tax)
+
+    # Second pass: property tax, NOI after tax.  Operating (income) tax applies
+    # only from stabilization; before that, property tax is captured as the
+    # capitalized construction-period tax (a development cost), so lease-up NOI
+    # carries no operating tax and there is no double count.
+    for p in range(1, N + 1):
+        if p < deliver_start:
+            continue
+        if p < stab_month:
+            op_tax[p] = 0.0
+            opex_total[p] = egi[p] - noi_bt[p]
+            noi[p] = noi_bt[p]
+            continue
+        yrs_from_stab = max(0.0, (p - stab_month) / 12.0)
+        if V["TaxMethodValue"] >= 1:
+            tax_annual = tax_year1 * ((1 + V["GrowthTax"]) ** yrs_from_stab)
+        else:
+            val = max(0.0, noi_bt[p] * 12) / V["EntryCapRate"] if V["EntryCapRate"] else 0
+            tax_annual = val * eff_tax
+        tax_m = tax_annual / 12.0
+        op_tax[p] = tax_m
+        opex_total[p] = (egi[p] - noi_bt[p]) + tax_m
+        noi[p] = noi_bt[p] - tax_m
 
     stab_noi_annual = fwd12(noi, stab_month - 1)   # 12 months from stabilization
     year1_noi_annual = fwd12(noi, deliver_start - 1)
@@ -254,7 +297,7 @@ def compute(overrides=None, want_static=True):
     # Cost basis for LTC excludes interest reserve (loan-funded on top).
     # Iterate points/recourse once analytically: they scale with loan, but for
     # sizing we use cost basis excluding those, then add them as uses.
-    cost_ex_int = direct_costs + dev_fee + V["ConOtherCosts"]  # + points+recourse+opreserve added below
+    cost_ex_int = direct_costs + dev_fee + V["ConOtherCosts"] + con_tax_total  # + points+recourse+opreserve added below
     # Operating reserve (needs op cash flow); compute a first pass w/o reserve.
 
     # Peak cumulative operating cash shortfall during lease-up (op CF pre-debt)
@@ -280,16 +323,20 @@ def compute(overrides=None, want_static=True):
     con_points = V["ConPointsPct"] * con_cost_commit
     recourse_fee = V["RecourseFeePct"] * con_cost_commit
     # add financing costs to uses (equity/loan funds them); they are part of cost_ex_int
-    cost_ex_int_final = direct_costs + dev_fee + V["ConOtherCosts"] + con_points + recourse_fee + op_reserve
+    cost_ex_int_final = (direct_costs + dev_fee + V["ConOtherCosts"] + con_tax_total
+                         + con_points + recourse_fee + op_reserve)
     debt_share = con_cost_commit / cost_ex_int_final if cost_ex_int_final else 0.0
 
-    # Monthly fundable uses (direct spend + dev fee + financing at con start + op reserve at stab)
+    # Monthly fundable uses (direct spend + dev fee + construction tax + financing + op reserve)
     uses_m = [0.0] * (N + 1)
     for p in range(1, N + 1):
-        uses_m[p] += spend[p] + fee_arr[p]
+        uses_m[p] += spend[p] + fee_arr[p] + con_tax[p]
     close_m = ms["Initial Closing"]["start"]
     uses_m[close_m] += V["ConOtherCosts"] + con_points + recourse_fee
-    uses_m[stab_month] += op_reserve
+    # Operating reserve is funded at closing (a real capital use) and RELEASED
+    # back to equity at stabilization (below), so it is recycled rather than
+    # trapped.  The actual lease-up shortfall is funded through operating CF.
+    uses_m[close_m] += op_reserve
 
     # ---- Funding order + sequential interest reserve ----------------------
     equity_budget = cost_ex_int_final - con_cost_commit
@@ -407,7 +454,10 @@ def compute(overrides=None, want_static=True):
     blended_cap = fwd_noi_bt / denom if denom else V["ExitCapResidential"]
 
     if V["ReassessOnSale"] >= 1:
-        eff_tax_on_value = V["DispoTaxRatePct"]
+        # Disposition tax rate defaults to the operating effective rate for
+        # consistency (override via DispoTaxRatePct>0 for a non-transferable
+        # abatement where the buyer pays a different rate).
+        eff_tax_on_value = V["DispoTaxRatePct"] if V["DispoTaxRatePct"] > 0 else eff_tax
         exit_value = fwd_noi_bt / (blended_cap + eff_tax_on_value) if (blended_cap + eff_tax_on_value) else 0
     else:
         exit_value = fwd_noi_after_inplace / blended_cap if blended_cap else 0
@@ -422,14 +472,18 @@ def compute(overrides=None, want_static=True):
     # ---- Levered & unlevered cash flows -----------------------------------
     lev = [0.0] * (N + 1)
     unlev = [0.0] * (N + 1)
-    # unlevered uses = direct + dev fee + op reserve (exclude financing)
+    # unlevered uses = direct + dev fee + op reserve (exclude financing);
+    # reserve funded at closing and released at stabilization (recycled).
     unlev_uses = [0.0] * (N + 1)
     for p in range(1, N + 1):
-        unlev_uses[p] = spend[p] + fee_arr[p]
-    unlev_uses[stab_month] += op_reserve
+        unlev_uses[p] = spend[p] + fee_arr[p] + con_tax[p]
+    unlev_uses[close_m] += op_reserve
     for p in range(1, N + 1):
         lev[p] = -eq_draw[p] + op_cf[p]
         unlev[p] = -unlev_uses[p] + (noi[p] - below[p] if deliver_start <= p <= dispo else 0.0)
+    # Operating-reserve release back to equity / property at stabilization
+    lev[stab_month] += op_reserve
+    unlev[stab_month] += op_reserve
     if refi:
         lev[refi_month] += refi_cash_out
     lev[dispo] += net_sale
@@ -508,7 +562,8 @@ def compute(overrides=None, want_static=True):
         # budget
         land_total=land_total, soft_total=soft_total, hard_total=hard_total,
         direct_costs=direct_costs, dev_fee=dev_fee, line_spend=line_spend,
-        spend=spend, fee_arr=fee_arr,
+        spend=spend, fee_arr=fee_arr, con_tax=con_tax, con_tax_total=con_tax_total,
+        cum_hard=cum_hard,
         # loan sizing
         con_cost_commit=con_cost_commit, debt_share=debt_share, con_points=con_points,
         recourse_fee=recourse_fee, op_reserve=op_reserve, peak_short=peak_short,
@@ -522,6 +577,8 @@ def compute(overrides=None, want_static=True):
         delivered=delivered, leased=leased, occ=occ, gpr=gpr, egi=egi,
         noi=noi, noi_bt=noi_bt, below=below, op_tax=op_tax, op_cf=op_cf,
         stab_noi_annual=stab_noi_annual, year1_noi_annual=year1_noi_annual,
+        stab_noi_bt=stab_noi_bt, assessed_value_stab=assessed_value_stab,
+        tax_year1=tax_year1, eff_tax=eff_tax, growth_start_month=growth_start_month,
         # perm
         value_at_refi=value_at_refi, perm_loan=perm_loan, perm_points=perm_points,
         refi_cash_out=refi_cash_out, perm_bal=perm_bal, perm_ds=perm_ds,

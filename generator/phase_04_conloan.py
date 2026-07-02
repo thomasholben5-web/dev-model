@@ -34,7 +34,7 @@ def build(wb, reg):
         row_ref[0] += 1
     row_ref = [row]
     sc("Cost Basis for LTC (excl. cap. int.)",
-       "DirectCosts+DevFee+ConOtherCosts+OpReserve", "ConCostBasis")
+       "DirectCosts+DevFee+ConOtherCosts+ConTaxTotal+OpReserve", "ConCostBasis")
     sc("Max Loan by Target LTC", "TargetLTC*ConCostBasis", "MaxByLTC")
     sc("Max Loan by Min Debt Yield", "StabNOI/ConMinDebtYield", "MaxByDebtYield")
     sc("Max Loan by Min DSCR (I/O)", "StabNOI/(ConMinDSCR*ConRate)", "MaxByDSCR")
@@ -42,7 +42,7 @@ def build(wb, reg):
     sc("Origination Points", "ConPointsPct*ConCostCommit", "ConPoints")
     sc("Loan Recourse / Indemnity Fee", "RecourseFeePct*ConCostCommit", "RecourseFee")
     sc("Total Uses ex-Interest (final)",
-       "DirectCosts+DevFee+ConOtherCosts+ConPoints+RecourseFee+OpReserve", "ConCostExInt")
+       "DirectCosts+DevFee+ConOtherCosts+ConTaxTotal+ConPoints+RecourseFee+OpReserve", "ConCostExInt")
     sc("Debt Share of Uses", "ConCostCommit/ConCostExInt", "DebtShare", fmt=FMT_PCT2)
     sc("Equity Budget (ex-Interest)", "ConCostExInt-ConCostCommit", "EquityBudget")
 
@@ -87,9 +87,11 @@ def build(wb, reg):
              fmt=FMT_NUM0, total=None, key="days", sheet=SH_CON)
 
     def f_uses(p, C, Cprev):
+        # Operating reserve funded at initial closing (released to equity at
+        # stabilization on the CashFlow sheet) rather than trapped.
         return (f"{mref(SH_SPEND,'spend_total',p)}+{mref(SH_SPEND,'fee_spend',p)}"
-                f"+IF({p}=MS_Initial_Closing_Start,ConOtherCosts+ConPoints+RecourseFee,0)"
-                f"+IF({p}=StabMonth,OpReserve,0)")
+                f"+{mref(SH_SPEND,'con_tax',p)}"
+                f"+IF({p}=MS_Initial_Closing_Start,ConOtherCosts+ConPoints+RecourseFee+OpReserve,0)")
     grid_row(ws, R_uses, "Fundable Uses", f_uses, fmt=FMT_USD0, key="uses", sheet=SH_CON)
 
     def f_eq(p, C, Cprev):

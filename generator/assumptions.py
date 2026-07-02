@@ -10,6 +10,7 @@ budget lines) live in their own tables.
 Nothing here computes model results — these are raw, hard-keyed assumptions
 only.  Everything downstream is derived.
 """
+import datetime as _dt
 
 # ---------------------------------------------------------------------------
 # Horizon (kept consistent with common.py)
@@ -44,7 +45,7 @@ _sec("Property Details", [
     ("Market",          "Austin-Round Rock",     FMT["txt"], "MSA"),
     ("ProductType",     "Garden / Mid-Rise",     FMT["txt"], ""),
     ("Location",        "Suburban Infill",       FMT["txt"], ""),
-    ("InceptionDate",   "2026-01-01",            FMT["date"], "Model period 1 = this month"),
+    ("InceptionDate",   _dt.date(2026, 1, 1),    FMT["date"], "Model period 1 = this month"),
 ])
 
 _sec("Investment Details", [
@@ -61,6 +62,7 @@ _sec("Investment Details", [
     ("GrowthUtility",      0.0350, FMT["pct2"], "Annual utility growth"),
     ("GrowthTax",          0.0200, FMT["pct2"], "Annual tax growth"),
     ("GrowthOther",        0.0300, FMT["pct2"], "Annual other-income growth"),
+    ("GrowthStartDate",    _dt.date(2026, 2, 1), FMT["date"], "Date all growth trending begins (override)"),
 ])
 
 _sec("Unit Delivery & Lease-Up", [
@@ -84,11 +86,11 @@ _sec("Site Details", [
 _sec("Property Taxes", [
     ("TaxLevyPct",        0.0185, FMT["pct2"], "Levy / mill rate (% of assessed)"),
     ("TaxAssessmentPct",  1.00,   FMT["pct1"], "Assessment ratio (% of value)"),
-    ("TaxValueAdjFactor", 1.00,   FMT["num2"], "Value-adjustment factor"),
+    ("TaxValueAdjFactor", 0.50,   FMT["num2"], "Value-adjustment / abatement factor (1.0 = full unabated tax)"),
     ("TaxMethodValue",    1,      FMT["num0"], "Post-stab method: 1=value approach, 0=income approach"),
-    ("TaxYear1",          650000, FMT["usdc"], "Year-1 stabilized tax (value approach)"),
+    ("TaxYear1Override",  0,      FMT["usdc"], "Year-1 stabilized tax: 0=dynamic (stab value x rate), >0=manual"),
     ("ReassessOnSale",    1,      FMT["num0"], "1=reassess buyer taxes on sale value, 0=in-place"),
-    ("DispoTaxRatePct",   0.0185, FMT["pct2"], "Disposition-period effective tax rate on value"),
+    ("DispoTaxRatePct",   0.0000, FMT["pct2"], "Buyer tax rate at sale: 0=use operating effective rate (consistent)"),
 ])
 
 _sec("Capitalization & Funding", [
@@ -238,7 +240,6 @@ BUDGET_LINES = [
     ("Consultants",            "Soft",  "Soft", "abs",  400000,  "Entitlement",      "Straight_Line",  0),
     ("Legal & Org.",           "Soft",  "Soft", "abs",  300000,  "Due Diligence",    "Straight_Line",  0),
     ("Marketing & Lease-Up",   "Soft",  "Soft", "unit", 1200,    "Lease-Up",         "Straight_Line",  0),
-    ("Property Taxes (Dev)",   "Soft",  "Soft", "abs",  700000,  "Construction",     "Straight_Line",  0),
     ("Insurance (Dev)",        "Soft",  "Soft", "abs",  500000,  "Construction",     "Straight_Line",  0),
 
     ("GC Contract (Hard)",     "Hard",  "Hard", "sf",   200.0,   "Construction",     "Bell_Curve",     0),

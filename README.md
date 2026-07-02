@@ -85,6 +85,21 @@ Named ranges are listed in `build/named_ranges.txt` (245 of them).
   shortfall × a coverage multiple (floored by a months-of-opex minimum).
 - **No-Cash-Out** solves the perm loan in closed form so net cash at refi = 0
   (`PermLoan = ConPayoff / (1 − points%)`, capped at the sized maximum).
+- **Growth clock** is anchored to a `GrowthStartDate` input (default month 2,
+  overridable) and compounds **monthly** across all growth series.
+- **Year-1 property tax is dynamic** (non-circular): assessed value =
+  stabilized NOI-before-tax / (cap + effective rate), tax = value × effective
+  rate, with a manual override (`TaxYear1Override`). The disposition
+  reassessment uses the same effective rate for consistency.
+- **Construction-period property tax is dynamic** — assessed on land +
+  cumulative hard-cost put in place × effective rate, monthly from initial
+  closing to stabilization, **capitalized** as a development cost (operating
+  tax begins at stabilization, so there is no double count).
+- **Operating reserve** is funded at closing and **released to equity at
+  stabilization** (recycled, not trapped); the actual lease-up shortfall is
+  funded through operating cash flow.
+- Every monthly grid carries a **calendar-month reference row** (real dates via
+  non-volatile `EDATE`) beneath the period numbers.
 
 ---
 

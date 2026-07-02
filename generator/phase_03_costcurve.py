@@ -15,7 +15,7 @@ from common import (write_title, write_section, label, put_formula, put_text,
                     N_MONTHS, mcol, mcl)
 from assumptions import all_budget_lines
 from layout import (SH_SPEND, SH_BUDGET, SH_TIME, set_row, r, period_header,
-                    grid_row, FIRST_COL_LETTER, LAST_COL_LETTER)
+                    date_header, grid_row, FIRST_COL_LETTER, LAST_COL_LETTER)
 
 # Helper columns placed to the right of the monthly grid
 H0 = mcol(N_MONTHS) + 2
@@ -36,6 +36,7 @@ def build(wb, reg):
 
     row = 4
     row = period_header(ws, row)
+    row = date_header(ws, row)
     lines = all_budget_lines()
 
     line_rows = []
@@ -85,6 +86,33 @@ def build(wb, reg):
                 f"DevFee/(MS_Stabilization_Start-MS_Initial_Closing_Start+1),0)")
     row = grid_row(ws, row, "Sponsor Development Fee", make_fee(), fmt=FMT_USD0,
                    total="sum", key="fee_spend", sheet=SH_SPEND)
+
+    # ---- Dynamic construction-period property tax ------------------------
+    hard_rows = [line_rows[i] for i, ln in enumerate(lines) if ln["group"] == "Hard"]
+    def make_hard():
+        return lambda p, C, Cprev: "+".join(f"{C}${R}" for R in hard_rows)
+    row = grid_row(ws, row, "Hard Cost Spend", make_hard(), fmt=FMT_USD0,
+                   total="sum", key="hard_spend", sheet=SH_SPEND)
+    Rhard = r(SH_SPEND, "hard_spend")
+    def make_cumhard(Rc):
+        return lambda p, C, Cprev: (f"{C}${Rhard}" if Cprev is None else f"{Cprev}${Rc}+{C}${Rhard}")
+    Rcum = row
+    row = grid_row(ws, row, "Cumulative Hard Cost in Place",
+                   make_cumhard(Rcum), fmt=FMT_USD0, total=None,
+                   key="cum_hard", sheet=SH_SPEND)
+    def make_contax():
+        return (lambda p, C, Cprev:
+                f"IF(AND({p}>=MS_Initial_Closing_Start,{p}<StabMonth),"
+                f"(LandCost+{C}${Rcum})*EffTaxRateOnValue/12,0)")
+    row = grid_row(ws, row, "Construction-Period Property Tax", make_contax(),
+                   fmt=FMT_USD0, total="sum", key="con_tax", sheet=SH_SPEND)
+    # Total (named range) for cost basis / TDC
+    label(ws, row, "Construction-Period Tax — Total", col=1, bold=True)
+    put_formula(ws, row, 3, f"'{SH_SPEND}'!$C${r(SH_SPEND,'con_tax')}", fmt=FMT_USD0,
+                bold=True, link=True)
+    reg.add("ConTaxTotal", SH_SPEND, f"C{row}")
+    set_row(SH_SPEND, "ConTaxTotal", row)
+    row += 1
 
     # Reconciliation checks: each line's monthly sum vs Budget total
     row += 1

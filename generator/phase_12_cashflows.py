@@ -10,7 +10,7 @@ unlevered net sale proceeds at disposition.
 from common import (write_title, write_section, write_subhead, label, put_formula,
                     set_col_widths, FMT_USD0, FILL_TOTAL)
 from layout import (SH_CF, SH_CON, SH_OPS, SH_SPEND, SH_TIME, SH_PERM, set_row,
-                    r, period_header, grid_row, mref, tref)
+                    r, period_header, date_header, grid_row, mref, tref)
 
 
 def build(wb, reg):
@@ -21,11 +21,14 @@ def build(wb, reg):
 
     row = 3
     row = period_header(ws, row)
+    row = date_header(ws, row)
 
-    # Unlevered project uses (exclude financing costs & interest reserve)
+    # Unlevered project uses (exclude financing costs & interest reserve);
+    # operating reserve funded at closing, released at stabilization (below).
     def f_unlev_uses(p, C, Cprev):
         return (f"{mref(SH_SPEND,'spend_total',p)}+{mref(SH_SPEND,'fee_spend',p)}"
-                f"+IF({p}=StabMonth,OpReserve,0)")
+                f"+{mref(SH_SPEND,'con_tax',p)}"
+                f"+IF({p}=MS_Initial_Closing_Start,OpReserve,0)")
     row = grid_row(ws, row, "Unlevered Project Uses", f_unlev_uses, fmt=FMT_USD0,
                    key="unlev_uses", sheet=SH_CF)
 
@@ -34,6 +37,7 @@ def build(wb, reg):
         opcf = (f"IF({mref(SH_TIME,'OpsActive',p)}=1,"
                 f"{mref(SH_OPS,'op_cf_pre',p)}-{mref(SH_PERM,'perm_ds',p)},0)")
         return (f"-{mref(SH_CON,'eq_draw',p)}+{opcf}"
+                f"+IF({p}=StabMonth,OpReserve,0)"
                 f"+IF({p}=RefiMonth,RefiCashOut,0)+IF({p}=DispoMonth,NetSale,0)")
     row = grid_row(ws, row, "Levered Cash Flow (to equity)", f_lev, fmt=FMT_USD0,
                    bold=True, key="lev", sheet=SH_CF)
@@ -42,6 +46,7 @@ def build(wb, reg):
     # Unlevered property cash flow
     def f_unlev(p, C, Cprev):
         return (f"-{C}${Runl}+{mref(SH_OPS,'unlev_ops',p)}"
+                f"+IF({p}=StabMonth,OpReserve,0)"
                 f"+IF({p}=DispoMonth,NetSaleUnlev,0)")
     row = grid_row(ws, row, "Unlevered Cash Flow (property)", f_unlev, fmt=FMT_USD0,
                    bold=True, key="unlev", sheet=SH_CF)

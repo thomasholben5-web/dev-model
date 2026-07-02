@@ -9,8 +9,8 @@ based operating-expense ramp/elevation in the operating model.
 
 from common import (write_title, write_section, write_subhead, label, put_formula,
                     set_col_widths, FMT_NUM0, FMT_PCT1, FILL_TOTAL)
-from layout import (SH_LEASE, SH_TIME, set_row, r, period_header, grid_row,
-                    FIRST_COL_LETTER, LAST_COL_LETTER)
+from layout import (SH_LEASE, SH_TIME, set_row, r, period_header, date_header,
+                    grid_row, FIRST_COL_LETTER, LAST_COL_LETTER)
 
 
 def build(wb, reg):
@@ -28,6 +28,7 @@ def build(wb, reg):
 
     write_section(ws, row, "Monthly Delivery & Absorption", span=3); row += 1
     row = period_header(ws, row)
+    row = date_header(ws, row)
 
     grid_row(ws, row, "Cumulative Units Delivered",
              lambda p, C, Cprev: f"IF({p}<DeliverStart,0,MIN(TotalUnits,({p}-DeliverStart+1)*UnitsDeliveredPerMo))",

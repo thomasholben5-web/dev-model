@@ -26,7 +26,17 @@ def build(wb, reg):
     row_ref = [row]
     sc("Effective Tax Rate on Value (operating)",
        "TaxLevyPct*TaxAssessmentPct*TaxValueAdjFactor", "EffTaxRateOnValue")
-    sc("Disposition-Period Tax Rate on Value", "DispoTaxRatePct", "DispoEffTaxRate")
+    sc("Disposition-Period Tax Rate on Value",
+       "IF(DispoTaxRatePct>0,DispoTaxRatePct,EffTaxRateOnValue)", "DispoEffTaxRate")
+
+    # Dynamic Year-1 stabilized tax (non-circular closed form on NOI-before-tax),
+    # with a manual override.  Assessed value = NOI-bt / (cap + tax rate).
+    sc("Stabilized Assessed Value",
+       "IF((EntryCapRate+EffTaxRateOnValue)=0,0,StabNOIbt/(EntryCapRate+EffTaxRateOnValue))",
+       "AssessedValueStab", fmt=FMT_USD0)
+    sc("Year-1 Stabilized Tax (dynamic / override)",
+       "IF(TaxYear1Override>0,TaxYear1Override,AssessedValueStab*EffTaxRateOnValue)",
+       "TaxYear1", fmt=FMT_USD0)
 
     Rtax = r(SH_OPS, "tax")
     taxrng = f"{FIRST_COL_LETTER}{Rtax}:{LAST_COL_LETTER}{Rtax}"

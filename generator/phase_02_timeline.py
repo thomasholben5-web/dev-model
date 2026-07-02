@@ -65,6 +65,9 @@ def build(wb, reg):
     derive("1st Unit Delivery", "MS_1st_Unit_Delivery_Start", "DeliverStart")
     derive("Stabilization Month", "MS_Stabilization_Start", "StabMonth")
     derive("Disposition Month", "HoldPeriodMonths", "DispoMonth")
+    derive("Growth Start Month",
+           "(YEAR(GrowthStartDate)-YEAR(InceptionDate))*12+MONTH(GrowthStartDate)-MONTH(InceptionDate)+1",
+           "GrowthStartMonth")
     derive("Refi Flag (1=refi,0=sell)", "IF(DispoMonth>ConMaturity,1,0)", "RefiFlag", fmt=FMT_NUM0)
     derive("Refi Month",
            "IF(RefiFlag=1,MIN(ConMaturity,IF(RefiMonthOverride>0,RefiMonthOverride,ConMaturity)),0)",

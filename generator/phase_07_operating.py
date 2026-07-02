@@ -14,13 +14,14 @@ from common import (write_title, write_section, write_subhead, label, put_formul
                     set_col_widths, FMT_USD0, FMT_PCT2, FMT_PCT1, FMT_NUM2,
                     FILL_TOTAL, N_MONTHS)
 from layout import (SH_OPS, SH_LEASE, SH_TIME, SH_PERM, set_row, r, period_header,
-                    grid_row, mref, FIRST_COL_LETTER, LAST_COL_LETTER)
+                    date_header, grid_row, mref, FIRST_COL_LETTER, LAST_COL_LETTER)
 
 YIDX = "INT(({p}-1)/12)"
 
 
 def gf(rate, p):
-    return f"(1+{rate})^INT(({p}-1)/12)"
+    # Monthly compounding anchored at the Growth Start month (overridable date).
+    return f"(1+{rate})^(MAX(0,{p}-GrowthStartMonth)/12)"
 
 
 def build(wb, reg):
@@ -31,6 +32,7 @@ def build(wb, reg):
 
     row = 3
     row = period_header(ws, row)
+    row = date_header(ws, row)
 
     active = "IF({p}>=DeliverStart,{body},0)"
     occ = lambda p: mref(SH_LEASE, "occ", p)
@@ -152,11 +154,13 @@ def build(wb, reg):
 
     # Property tax (value approach default; income approach non-circular via NOI-bt)
     def f_tax(p, C, Cprev):
-        yrs = f"MAX(0,INT(({p}-1)/12)-INT((StabMonth-1)/12))"
-        val_app = f"TaxYear1*(1+GrowthTax)^{yrs}/12"
+        # Operating property tax applies only from stabilization; before that,
+        # tax is capitalized as the construction-period tax (a dev cost).
+        yrs = f"MAX(0,({p}-StabMonth)/12)"
+        val_app = f"TaxYear1*(1+GrowthTax)^({yrs})/12"
         eff = "TaxLevyPct*TaxAssessmentPct*TaxValueAdjFactor"
         inc_app = f"MAX(0,{C}${Rnoibt}*12)/EntryCapRate*({eff})/12"
-        return A(f"IF(TaxMethodValue>=1,{val_app},{inc_app})").format(p=p)
+        return f"IF({p}<StabMonth,0,IF(TaxMethodValue>=1,{val_app},{inc_app}))"
     row = grid_row(ws, row, "Property Tax", f_tax, fmt=FMT_USD0, key="tax", sheet=SH_OPS)
     Rtax = r(SH_OPS, "tax")
 
@@ -213,6 +217,9 @@ def build(wb, reg):
         set_row(SH_OPS, name, row_ref[0])
         row_ref[0] += 1
     row_ref = [row]
+    noibtrng = f"{FIRST_COL_LETTER}{Rnoibt}:{LAST_COL_LETTER}{Rnoibt}"
+    agg("Stabilized NOI before Tax (fwd 12mo)",
+        f"SUM(INDEX({noibtrng},StabMonth):INDEX({noibtrng},StabMonth+11))", "StabNOIbt")
     agg("Stabilized NOI (fwd 12mo)",
         f"SUM(INDEX({noirng},StabMonth):INDEX({noirng},StabMonth+11))", "StabNOI")
     agg("Year-1 NOI (fwd 12mo from delivery)",

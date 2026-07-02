@@ -49,8 +49,8 @@ def _static_noi_rows(wb, reg):
 
     def f_stax(p, C, Cprev):
         eff = "TaxLevyPct*TaxAssessmentPct*TaxValueAdjFactor"
-        return (f"IF({p}>=DeliverStart,IF(TaxMethodValue>=1,TaxYear1/12,"
-                f"MAX(0,{C}${Rsnoibt}*12)/EntryCapRate*({eff})/12),0)")
+        return (f"IF({p}<StabMonth,0,IF(TaxMethodValue>=1,TaxYear1/12,"
+                f"MAX(0,{C}${Rsnoibt}*12)/EntryCapRate*({eff})/12))")
     row = grid_row(ws, row, "Static Property Tax", f_stax, fmt=FMT_USD0,
                    key="s_tax", sheet=SH_OPS)
     Rstax = r(SH_OPS, "s_tax")
