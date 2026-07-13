@@ -1,0 +1,111 @@
+<title>Stabilized Year One Operating Proforma — The Verde</title>
+<style>
+:root{
+ --navy:#1f3864; --navy2:#2e5496; --ink:#1a1f2b; --muted:#5b6472;
+ --line:#dfe3ea; --paper:#ffffff; --panel:#f6f7f9; --cream:#fdf3d0; --cream-ink:#7a5b00;
+ --green:#e2efda; --green-ink:#2f6b2f; --link:#0f7a3d; --neg:#b4232a;
+ --band:#eef1f6;
+}
+@media (prefers-color-scheme:dark){
+ :root{ --navy:#9db8e6; --navy2:#7ea0d8; --ink:#e7ebf2; --muted:#9aa4b4;
+  --line:#2a3140; --paper:#12151c; --panel:#171b24; --cream:#3a3320; --cream-ink:#e8cf7a;
+  --green:#1e2f22; --green-ink:#8fd39a; --link:#5fd08a; --neg:#ff8a8a; --band:#1a1f2a; }
+}
+:root[data-theme="light"]{ --navy:#1f3864;--navy2:#2e5496;--ink:#1a1f2b;--muted:#5b6472;--line:#dfe3ea;--paper:#fff;--panel:#f6f7f9;--cream:#fdf3d0;--cream-ink:#7a5b00;--green:#e2efda;--green-ink:#2f6b2f;--link:#0f7a3d;--neg:#b4232a;--band:#eef1f6; }
+:root[data-theme="dark"]{ --navy:#9db8e6;--navy2:#7ea0d8;--ink:#e7ebf2;--muted:#9aa4b4;--line:#2a3140;--paper:#12151c;--panel:#171b24;--cream:#3a3320;--cream-ink:#e8cf7a;--green:#1e2f22;--green-ink:#8fd39a;--link:#5fd08a;--neg:#ff8a8a;--band:#1a1f2a; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--panel);color:var(--ink);
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+ font-variant-numeric:tabular-nums;line-height:1.45;padding:32px 20px 56px}
+.wrap{max-width:920px;margin:0 auto}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--navy2);font-weight:700;margin:0 0 6px}
+h1{font-size:26px;line-height:1.15;margin:0 0 4px;color:var(--navy);text-wrap:balance;font-weight:800}
+.sub{color:var(--muted);font-size:14px;margin:0 0 22px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 24px}
+@media(max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.kpi .v{font-size:20px;font-weight:800;color:var(--navy);letter-spacing:-.01em}
+.kpi .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+ box-shadow:0 1px 2px rgba(20,30,60,.04),0 8px 24px rgba(20,30,60,.05)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:680px}
+thead th{background:var(--navy2);color:#fff;font-weight:600;font-size:11px;letter-spacing:.03em;
+ padding:10px 12px;text-align:right;white-space:nowrap;position:sticky;top:0}
+thead th.l{text-align:left}
+tbody td{padding:7px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody td.l{text-align:left;color:var(--ink)}
+tbody td.drv{color:var(--link);font-weight:600;background:color-mix(in srgb,var(--cream) 55%,transparent)}
+tr.sect td{background:var(--navy);color:#fff;font-weight:700;font-size:11px;letter-spacing:.09em;
+ text-transform:uppercase;padding:8px 12px;text-align:left}
+tr.sub td{background:var(--green);color:var(--green-ink);font-weight:700;border-top:1px solid var(--line)}
+tr.sub td.l{color:var(--green-ink)}
+tr.sub td.drv{background:var(--green)}
+tr.noi td{background:var(--band);font-weight:800;color:var(--navy);border-top:2px solid var(--navy2);border-bottom:2px solid var(--navy2)}
+tr.noi td.drv{background:var(--band)}
+tr.cf td{background:var(--navy);color:#fff;font-weight:800}
+tr.cf td.drv{background:var(--navy);color:#cfe0ff}
+tbody tr:not(.sect):not(.sub):not(.noi):not(.cf):hover td{background:color-mix(in srgb,var(--navy2) 7%,transparent)}
+.note{font-size:12px;color:var(--muted);margin:16px 2px 0;display:flex;gap:8px;align-items:flex-start}
+.chip{display:inline-block;font-size:11px;font-weight:700;color:var(--green-ink);background:var(--green);
+ border-radius:999px;padding:2px 9px;letter-spacing:.02em}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:14px 2px 0}
+.sw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:5px;border:1px solid var(--line)}
+</style>
+<div class="wrap">
+ <p class="eyebrow">New tab · Proforma</p>
+ <h1>Stabilized Year One Operating Proforma</h1>
+ <p class="sub">The Verde &nbsp;•&nbsp; Cottonwood, AZ &nbsp;•&nbsp; forward 12-month stabilized period (months 26–37) · 68 units · 61,450 NRSF</p>
+ <div class="kpis">
+  <div class="kpi"><div class="v">$16,239</div><div class="k">NOI / unit / yr</div></div>
+  <div class="kpi"><div class="v">70.7%</div><div class="k">NOI margin</div></div>
+  <div class="kpi"><div class="v">29.3%</div><div class="k">OpEx ratio</div></div>
+  <div class="kpi"><div class="v">94%</div><div class="k">Stabilized occ.</div></div>
+ </div>
+ <div class="card"><div class="scroll">
+ <table>
+  <thead><tr>
+   <th class="l">Stabilized Operating Proforma</th><th>% of / amt</th><th>$ / SF /mo</th>
+   <th>$ / Unit /mo</th><th>$ / Month</th><th>$ / Unit /yr</th><th>$ / Year</th>
+  </tr></thead>
+  <tbody>
+<tr class="sect"><td colspan="7">Revenue</td></tr>
+<tr class=""><td class="l">Gross Potential Rent</td><td class="drv">3.00%</td><td>$2.08</td><td>1,883</td><td>128,028</td><td>22,593</td><td>1,536,330</td></tr>
+<tr class=""><td class="l">Vacancy Loss</td><td class="drv">-6.00%</td><td>$(0.12)</td><td>(111)</td><td>(7,531)</td><td>(1,329)</td><td>(90,372)</td></tr>
+<tr class=""><td class="l">Gain / (Loss) to Lease</td><td class="drv">0.00%</td><td>$0.00</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr class=""><td class="l">Bad Debt</td><td class="drv">0.50%</td><td>$(0.01)</td><td>(9)</td><td>(640)</td><td>(113)</td><td>(7,682)</td></tr>
+<tr class=""><td class="l">Concessions</td><td class="drv">0.00%</td><td>$0.00</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr class=""><td class="l">Parking & Storage</td><td class="drv">$50</td><td>$0.06</td><td>51</td><td>3,441</td><td>607</td><td>41,296</td></tr>
+<tr class=""><td class="l">Utility Reimbursement</td><td class="drv">$50</td><td>$0.06</td><td>51</td><td>3,441</td><td>607</td><td>41,296</td></tr>
+<tr class=""><td class="l">Other Income</td><td class="drv">$50</td><td>$0.06</td><td>51</td><td>3,441</td><td>607</td><td>41,296</td></tr>
+<tr class=""><td class="l">Retail Income</td><td class="drv">$0</td><td>$0.00</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr class="sub"><td class="l">Effective Gross Income</td><td class="drv"></td><td>$2.12</td><td>1,914</td><td>130,180</td><td>22,973</td><td>1,562,163</td></tr>
+<tr class="sect"><td colspan="7">Operating Expenses</td></tr>
+<tr class=""><td class="l">Property Taxes</td><td class="drv">3.00%</td><td>$0.03</td><td>24</td><td>1,613</td><td>285</td><td>19,361</td></tr>
+<tr class=""><td class="l">Insurance</td><td class="drv">$500</td><td>$0.05</td><td>45</td><td>3,047</td><td>538</td><td>36,564</td></tr>
+<tr class=""><td class="l">Utilities</td><td class="drv">$1,000</td><td>$0.10</td><td>90</td><td>6,094</td><td>1,075</td><td>73,128</td></tr>
+<tr class=""><td class="l">Payroll</td><td class="drv">$1,544</td><td>$0.15</td><td>138</td><td>9,409</td><td>1,660</td><td>112,909</td></tr>
+<tr class=""><td class="l">Management Fee</td><td class="drv">3.40%</td><td>$0.07</td><td>65</td><td>4,426</td><td>781</td><td>53,114</td></tr>
+<tr class=""><td class="l">Repairs & Maintenance</td><td class="drv">$365</td><td>$0.04</td><td>33</td><td>2,224</td><td>393</td><td>26,692</td></tr>
+<tr class=""><td class="l">Turnover</td><td class="drv">$335</td><td>$0.03</td><td>30</td><td>2,041</td><td>360</td><td>24,498</td></tr>
+<tr class=""><td class="l">Contract Services</td><td class="drv">$849</td><td>$0.08</td><td>76</td><td>5,174</td><td>913</td><td>62,086</td></tr>
+<tr class=""><td class="l">Admin & Legal</td><td class="drv">$478</td><td>$0.05</td><td>43</td><td>2,913</td><td>514</td><td>34,955</td></tr>
+<tr class=""><td class="l">Advertising</td><td class="drv">$200</td><td>$0.02</td><td>18</td><td>1,219</td><td>215</td><td>14,626</td></tr>
+<tr class="sub"><td class="l">Total Operating Expenses</td><td class="drv"></td><td>$0.62</td><td>561</td><td>38,161</td><td>6,734</td><td>457,932</td></tr>
+<tr class="noi"><td class="l">Net Operating Income</td><td class="drv"></td><td>$1.50</td><td>1,353</td><td>92,019</td><td>16,239</td><td>1,104,231</td></tr>
+<tr class="sect"><td colspan="7">Below-the-Line Expenses</td></tr>
+<tr class=""><td class="l">Capital Reserves</td><td class="drv">$300</td><td>$0.03</td><td>25</td><td>1,700</td><td>300</td><td>20,400</td></tr>
+<tr class=""><td class="l">Tax Prep & Appraisal</td><td class="drv">$0</td><td>$0.00</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr class=""><td class="l">Asset Management Fees</td><td class="drv">1.00%</td><td>$0.02</td><td>19</td><td>1,302</td><td>230</td><td>15,622</td></tr>
+<tr class="sub"><td class="l">Total Below-the-Line</td><td class="drv"></td><td>$0.05</td><td>44</td><td>3,002</td><td>530</td><td>36,022</td></tr>
+<tr class="cf"><td class="l">Proforma Operating Cash Flow</td><td class="drv"></td><td>$1.45</td><td>1,309</td><td>89,017</td><td>15,709</td><td>1,068,210</td></tr>
+  </tbody>
+ </table>
+ </div></div>
+ <div class="legend">
+  <span><span class="sw" style="background:var(--cream)"></span>Driver links to <b>Inputs</b> (edit there)</span>
+  <span><span class="sw" style="background:var(--green)"></span>Subtotal</span>
+  <span><span class="sw" style="background:var(--navy)"></span>NOI / Operating cash flow</span>
+ </div>
+ <p class="note"><span class="chip">RECONCILES</span> <span>Operating cash flow, the below-the-line split, and NOI all tie back to the monthly Operating engine (deltas = 0), and those checks feed the master Diagnostics error count. Every $/basis derives from the one <b>$ / Year</b> cell, so each row is internally consistent.</span></p>
+</div>

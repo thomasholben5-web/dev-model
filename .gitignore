@@ -10,3 +10,4 @@ build/tiny.xlsx
 recalc/*.xlsx
 recalc/base/
 recalc/out/
+scratch_*.json
