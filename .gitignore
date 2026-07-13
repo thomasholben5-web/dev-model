@@ -5,6 +5,8 @@ __pycache__/
 # Recalc / scratch artifacts
 build/recalc/
 build/tiny.xlsx
-
 # LibreOffice profiles
 .config/
+recalc/*.xlsx
+recalc/base/
+recalc/out/

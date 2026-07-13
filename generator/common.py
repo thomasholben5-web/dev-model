@@ -71,7 +71,6 @@ FMT_USD0_DOLLAR = '$#,##0;($#,##0)'
 FMT_USD2_DOLLAR = '$#,##0.00;($#,##0.00)'
 FMT_PCT1 = '0.0%'
 FMT_PCT2 = '0.00%'
-FMT_PCT3 = '0.000%'
 FMT_PCT0 = '0%'
 FMT_NUM0 = '#,##0'
 FMT_NUM1 = '#,##0.0'
@@ -210,9 +209,6 @@ def put_input(ws, row, col, value, fmt=FMT_NUM0, note=None, note_col=None):
     return c
 
 def put_formula(ws, row, col, formula, fmt=FMT_NUM0, link=False, bold=False, fill=None):
-    # openpyxl only treats a string as a formula if it begins with '='.
-    if isinstance(formula, str) and not formula.startswith("="):
-        formula = "=" + formula
     c = ws.cell(row=row, column=col, value=formula)
     c.font = font_link(bold=bold) if link else font_formula(bold=bold)
     c.number_format = fmt

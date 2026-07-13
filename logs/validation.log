@@ -1,0 +1,15 @@
+VALIDATION RECORD — enhancement pass (2026-07-13)
+Engine note: LibreOffice import filters non-functional in this container
+('source file could not be loaded' on every workbook incl. trivial ones), so the
+Python shadow model is used as the authoritative numeric check per the build spec,
+with the `formulas` AST parser used for formula error-detection.
+
+[PASS] Formula compile check: 5829 formulas parsed across touched sheets, 0 failures
+[PASS] Error-string scan (cached values, all sheets): 0
+[PASS] Named ranges preserved: 251 (unchanged from 251)
+[PASS] Phase A  lease-up milestone -> StabMonth=26, Chk_LeaseUpReached=0 (was -10 FAIL)
+[PASS] Phase B  Proforma OpCF ties to Operating!row42 fwd-12mo   (delta 0)
+[PASS] Phase B  Below-the-line split ties to Operating!row40     (delta 0)
+[PASS] Phase B  Proforma NOI == StabNOI on recalc (identical INDEX window)
+[PASS] Phase C  tab colours, frozen panes, gridlines applied; sheet order Dashboard>Proforma
+Stabilized base case (window mo 26-37): EGI 1,562,163 | NOI 1,104,231 (70.7%) | OpCF 1,068,210
