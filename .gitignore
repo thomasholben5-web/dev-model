@@ -11,3 +11,5 @@ recalc/*.xlsx
 recalc/base/
 recalc/out/
 scratch_*.json
+*.calc.json
+build/model_fix*.xlsx

@@ -1,0 +1,28 @@
+REMEDIATION VALIDATION RECORD — Claude_Dev_Model.xlsx (The Verde)
+Engine: `formulas` (pure-Python Excel calculator); LibreOffice non-functional in container.
+Authoritative checks: engine native error-string scan + independent Python shadow + per-cell dumps.
+
+BEFORE (baseline, as delivered)      -> AFTER (all 9 fixes)
+  Yield on Cost   5.055% (trended)   -> 5.941% (untrended)      [FIX 1 + FIX 2]
+  Dev Spread      -19.5 bps          -> +69.1 bps
+  Levered IRR     21.72%             -> 20.38%
+  Unlevered IRR   12.71%             -> 12.37%
+  TDC             $21.84M            -> $16.92M                 [FIX 2: no longer capitalizes
+  Construction term 480 mo           -> 36 mo                    a decade of interest]
+  Refi engine     inert (PermLoan 0) -> live (PermLoan $13.35M, refi @mo 45)
+  Debt Yield      /ConLoan always    -> /active loan (7.53% perm) [FIX 8]
+
+FINAL VALIDATION (engine + shadow + cell dumps):
+  [PASS] Native workbook-wide error-string scan: 0 errors / 50,028 cells
+  [PASS] All 21 reconciliation checks D5:D25 = PASS (dumped individually)
+  [PASS] Refi branch (hold 120): perm sizes to DSCR, sources=uses=0, con retired
+  [PASS] Sell branch (hold 40 < maturity 45): RefiFlag=0, PermLoan=0, con retired at sale
+  [PASS] No-Cash-Out toggle: perm sized to $11.42M, net cash at refi = 0
+  [PASS] Untrended NOI (1,005,176) <= trended NOI (1,082,431)  [FIX 1 diagnostic]
+  [PASS] Per-sheet ISERROR helpers 13/14 engine-verified = 0 (Dashboard Excel-only: status text)
+  [PASS] Static (no-growth) IRR growth-independent (StaticTaxYear1 decoupled)  [FIX 4]
+  [PASS] Dead input named ranges: 0 (all wired by name)  [FIX 6]
+  [WARN] Stabilized tax/unit = $284 (< $500 band) — sanity warning fires as intended [FIX 3/5]
+  ErrorsFound = 0 (proven component-wise; Excel computes in-sheet), WarningsFound = 1
+
+Per-fix engine recalcs: baseline, fix1, fix2 (+NCO +sell variants), fix3/4/6/7, fix5 (x3).

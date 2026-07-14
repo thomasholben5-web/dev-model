@@ -137,3 +137,26 @@ python3 generator/enhance.py Claude_Dev_Model.xlsx build/model_enhanced.xlsx
 
 Validation record: `logs/validation.log` (5,829 formulas compile clean; error-string scan
 0; shadow reconciliation deltas 0; 251 named ranges preserved).
+
+---
+
+## 6. Remediation pass (`generator/remediate.py`)
+
+A nine-item defect remediation applied directly to `Claude_Dev_Model.xlsx` (the user's
+"The Verde" deal — a different deal and column layout than the Meridian generator, so the
+workbook is patched, not regenerated). Validation record: `logs/remediation_validation.log`.
+
+| # | Fix | Effect |
+|---|---|---|
+| 1 | **Untrended proforma drives dev metrics.** New point-in-time untrended stabilized proforma (growth=1, occ=StabOcc); `StabNOI_Untrended`/`StabNOIbt_Untrended` drive YOC / ROC-stab / dev-spread / debt-yield. Trended NOI still drives CF/IRR/refi/disposition. Proforma tab rebuilt: untrended headline + trended reference column + real driver column (FIX 9). | YOC 5.055%(trended)→untrended basis |
+| 2 | **Refinance engine live.** Construction term 480→36 mo (+ 12–60 data validation); refi branch activates. | Refi $13.35M @mo 45; TDC $21.8M→$16.9M (stops capitalizing a decade of interest); spread −20→+69 bps |
+| 3 | **Property-tax transparency + lease-up toggle.** Derived effective rate + tax/unit surfaced on Inputs; `TaxCapitalizeLeaseUp` toggle (default = capitalize pre-stab tax). | base case unchanged; sanity warning flags low tax/unit |
+| 4 | **Static block growth-independent.** `StaticTaxYear1` decoupled from the grown engine. | static IRR now truly no-growth |
+| 5 | **Diagnostics prove claims.** Per-sheet workbook-wide `ISERROR` scan; non-trivial two-branch refi checks; economic-sanity warnings; dead-input audit; `WarningsFound` count. | 21 recon PASS + warnings |
+| 6 | **Dead inputs wired by name.** Cap adjustments→exit cap, ModelUnits→vacancy (both engines), InvestmentType/Location→Dashboard, NetAcres/FARRatio→site metrics, RetailIncomeMo, DevFeeThirdPartySplit, LeaseUpIncomeOffset→reserve. | 0 dead inputs |
+| 7 | **Hardcoded constants→Inputs.** 11 milestone durations + the 13-month delivery lag moved to a new Inputs section. | single source of truth |
+| 8 | **Debt yield on active loan.** `DebtYieldStab` = untrended NOI ÷ perm balance when refinanced, else construction. | 7.53% (perm) |
+| 9 | **Proforma driver column.** Real per-line drivers (avg rent, vacancy %, per-unit $, eff tax rate). | (folded into #1) |
+
+Both refi branches, the No-Cash-Out toggle, all 21 reconciliation checks, and the native
+50,028-cell error scan reconcile with **zero errors**.
