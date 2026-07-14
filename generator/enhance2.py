@@ -258,5 +258,188 @@ def main():
     print(f"saved {dst}")
 
 
-if __name__ == '__main__':
+# ======================================================================  PHASE B
+F_TITLE = Font(name="Calibri", size=16, bold=True, color=NAVY)
+F_HDR = Font(name="Calibri", size=9, bold=True, color="FFFFFFFF")
+F_TOT = Font(name="Calibri", size=10, bold=True, color=INK)
+F_FORM = Font(name="Calibri", size=10, color=INK)
+FILL_TOTAL = PatternFill("solid", fgColor="FFE2EFDA")
+FILL_HDR = PatternFill("solid", fgColor="FF2E5496")
+FMT_MONEY = '$#,##0;($#,##0);"–"'
+TOPB = Border(top=Side(style="thin", color="FF808080"))
+
+# scenario-driven inputs: name -> (inputs_row, base, upside, downside, fmt)
+SCEN = [
+    ('GrowthRent', 22, 0.03, 0.04, 0.015, '0.00%'),
+    ('GrowthExpense', 24, 0.03, 0.025, 0.04, '0.00%'),
+    ('EntryCapRate', 16, 0.0525, 0.0500, 0.0575, '0.00%'),
+    ('ExitCapRetail', 21, 0.065, 0.0625, 0.070, '0.00%'),
+    ('StabilizedOccupancy', 36, 0.94, 0.95, 0.90, '0.0%'),
+    ('UnitsLeasedPerMo', 33, 18, 22, 12, '#,##0'),
+    ('ConRate', 63, 0.057, 0.052, 0.065, '0.00%'),
+    ('PermRate', 73, 0.0625, 0.0575, 0.070, '0.00%'),
+]
+
+
+def _group_years(ws):
+    ws.sheet_properties.outlinePr.summaryRight = True
+    for y in range(1, 32):            # 31 years -> months 1..372 (cols E..NL)
+        first_m = (y - 1) * 12 + 1
+        first_col = 5 + first_m - 1   # month 1 -> col E(5)
+        g0 = get_column_letter(first_col + 1)
+        g1 = get_column_letter(min(first_col + 11, 376))
+        if first_col + 1 <= 376:
+            ws.column_dimensions.group(g0, g1, outline_level=1, hidden=False)
+
+
+def phase_b(wb):
+    # ---- B2: year column grouping on every 360-col tab -----------------------
+    for name in ['Timeline', 'DevSpend', 'ConLoan', 'LeaseUp', 'Operating',
+                 'PermLoan', 'CashFlow', 'Returns']:
+        _group_years(wb[name])
+
+    # ---- B5: binding sizing constraint (con + perm) --------------------------
+    cl = wb['ConLoan']
+    S(cl, 'B21', 'Binding Constraint', F_LBL, align=LEFT)
+    S(cl, 'C21', '=IF(ConCostCommit=MaxByLTC,"LTC",IF(ConCostCommit=MaxByDebtYield,"Debt Yield","DSCR"))',
+      F_LINK, align=RIGHT)
+    repoint(wb, 'ConBinding', "'ConLoan'!$C$21")
+    pl = wb['PermLoan']
+    S(pl, 'B21', 'Binding Constraint', F_LBL, align=LEFT)
+    S(pl, 'C21', '=IF(RefiFlag=0,"n/a (sell)",IF(PermSized=MaxLTVperm,"LTV",IF(PermSized=MaxDYperm,"Debt Yield","DSCR")))',
+      F_LINK, align=RIGHT)
+    repoint(wb, 'PermBinding', "'PermLoan'!$C$21")
+
+    # ---- B4: scenario switcher (Scenarios tab + repoint inputs to INDEX) ------
+    if 'Scenarios' in wb.sheetnames:
+        del wb['Scenarios']
+    sc = wb.create_sheet('Scenarios')
+    wb.move_sheet('Scenarios', -(len(wb.sheetnames) - 2))  # after Dashboard
+    for col, w in {'A': 3.7, 'B': 30, 'C': 14, 'D': 14, 'E': 14, 'F': 14}.items():
+        sc.column_dimensions[col].width = w
+    sc.sheet_view.showGridLines = False
+    sc.sheet_properties.tabColor = '7030A0'
+    S(sc, 'B1', 'Scenario Switcher', F_TITLE)
+    S(sc, 'B3', 'Active Scenario', F_LBL, align=LEFT)
+    S(sc, 'C3', 'Base', F_IN, FILL_INPUT, align=CENTER)
+    dv = DataValidation(type='list', formula1='"Base,Upside,Downside"', allow_blank=False,
+                        showErrorMessage=True)
+    dv.promptTitle = 'Scenario'; dv.prompt = 'Base / Upside / Downside drives all key assumptions'
+    sc.add_data_validation(dv); dv.add(sc['C3'])
+    S(sc, 'B4', 'Scenario Number', F_LBL, align=LEFT)
+    S(sc, 'C4', '=IF(C3="Base",1,IF(C3="Upside",2,3))', F_LINK, num=FMT_INT, align=CENTER)
+    repoint(wb, 'ScenarioSelect', "'Scenarios'!$C$3")
+    repoint(wb, 'ScenarioNum', "'Scenarios'!$C$4")
+    # header
+    hr = 6
+    for j, h in enumerate(['Driver', 'Base', 'Upside', 'Downside', 'Active'], start=2):
+        S(sc, f'{get_column_letter(j)}{hr}', h, F_HDR, FILL_HDR, align=(LEFT if j == 2 else CENTER))
+    r = hr + 1
+    ip = wb['Inputs']
+    for name, irow, base, up, down, fmt in SCEN:
+        S(sc, f'B{r}', ip.cell(irow, 2).value, F_LBL, align=LEFT)
+        S(sc, f'C{r}', base, F_IN, FILL_INPUT, num=fmt, align=CENTER)
+        S(sc, f'D{r}', up, F_IN, FILL_INPUT, num=fmt, align=CENTER)
+        S(sc, f'E{r}', down, F_IN, FILL_INPUT, num=fmt, align=CENTER)
+        S(sc, f'F{r}', f'=INDEX(C{r}:E{r},ScenarioNum)', F_LINK, num=fmt, align=CENTER)
+        # repoint the Inputs cell to read the active scenario value
+        ip.cell(irow, 3).value = f"=Scenarios!$F${r}"
+        ip.cell(irow, 3).font = F_LINK
+        ip.cell(irow, 3).fill = PatternFill(fill_type=None)
+        r += 1
+
+    # ---- B1 + B3: Annual Summary tab (Sources & Uses + annual rollup) --------
+    if 'Annual' in wb.sheetnames:
+        del wb['Annual']
+    an = wb.create_sheet('Annual')
+    wb.move_sheet('Annual', -(len(wb.sheetnames) - 3))  # after Scenarios
+    an.sheet_view.showGridLines = False
+    an.sheet_properties.tabColor = '375623'
+    an.column_dimensions['A'].width = 3.7
+    an.column_dimensions['B'].width = 34
+    S(an, 'B1', 'Annual Summary', F_TITLE)
+    S(an, 'B2', '="Scenario: "&ScenarioSelect&"   •   Hold: "&HoldPeriodMonths&" months"', F_HINT)
+
+    # Sources & Uses block (B3)
+    S(an, 'B4', 'Sources & Uses', F_SECT, FILL_SECT, align=LEFT)
+    for col in 'CD': an[f'{col}4'].fill = FILL_SECT
+    su = [
+        ('Uses', None), ('  Land', '=BudgetLand'), ('  Hard Costs', '=BudgetHard'),
+        ('  Soft Costs', '=BudgetSoft'), ('  Development Fee', '=DevFee'),
+        ('  Loan Costs (points, recourse, other)', '=ConPoints+RecourseFee+ConOtherCosts'),
+        ('  Interest Reserve', '=InterestReserveFunded'), ('  Operating Reserve', '=OpReserve'),
+        ('  Total Uses (TDC)', '=TDC_Total'),
+        ('Sources', None), ('  Construction Loan', '=ConLoanTotal'), ('  Equity', '=EquityTotal'),
+        ('  Refi Cash-Out (memo)', '=RefiCashOut'), ('  Total Sources', '=ConLoanTotal+EquityTotal'),
+        ('  Sources − Uses (check = 0)', '=ConLoanTotal+EquityTotal-TDC_Total'),
+    ]
+    r = 5
+    for label, form in su:
+        bold = label in ('Uses', 'Sources') or 'Total' in label or 'check' in label
+        S(an, f'B{r}', label, F_TOT if bold else F_LBL, align=LEFT)
+        if form:
+            S(an, f'C{r}', form, F_TOT if bold else F_FORM, num=FMT_MONEY, align=RIGHT)
+        if 'Total Uses' in label or 'Total Sources' in label or 'check' in label:
+            for col in 'BC': an[f'{col}{r}'].border = TOPB
+        r += 1
+    repoint(wb, 'SU_Check', f"'Annual'!$C${r-1}")
+
+    # Annual rollup grid
+    gr = r + 1
+    S(an, f'B{gr}', 'Annual Cash Flow (Year 1 … 31)', F_SECT, FILL_SECT, align=LEFT)
+    hdr = gr + 1
+    n_years = 31
+    S(an, f'B{hdr}', 'Year →', F_HDR, FILL_HDR, align=LEFT)
+    for y in range(1, n_years + 1):
+        col = get_column_letter(2 + y)
+        S(an, f'{col}{hdr}', y, F_HDR, FILL_HDR, num=FMT_INT, align=RIGHT)
+        an.column_dimensions[col].width = 12
+    # metric rows: (label, sheet, row, mode)  mode: 'flow' sum12 / 'eoy' year-end
+    METRICS = [
+        ('Development Spend', 'DevSpend', 34, 'flow'),
+        ('Construction Debt Draw', 'ConLoan', 29, 'flow'),
+        ('Equity Draw', 'ConLoan', 27, 'flow'),
+        ('Effective Gross Income', 'Operating', 23, 'flow'),
+        ('Net Operating Income', 'Operating', 38, 'flow'),
+        ('Construction Interest (capitalized)', 'ConLoan', 31, 'flow'),
+        ('Permanent Debt Service', 'PermLoan', 29, 'flow'),
+        ('Unlevered Cash Flow', 'CashFlow', 7, 'flow'),
+        ('Levered Cash Flow', 'CashFlow', 6, 'flow'),
+        ('Construction Loan Balance (EOY)', 'ConLoan', 32, 'eoy'),
+        ('Permanent Loan Balance (EOY)', 'PermLoan', 30, 'eoy'),
+        ('Physical Occupancy (EOY)', 'LeaseUp', 10, 'eoy'),
+    ]
+    rr = hdr + 1
+    metric_rows = {}
+    for label, sheet, srow, mode in METRICS:
+        S(an, f'B{rr}', label, F_LBL, align=LEFT)
+        occ = (label.startswith('Physical'))
+        for y in range(1, n_years + 1):
+            col = get_column_letter(2 + y)
+            rng = f"{sheet}!$E${srow}:$NL${srow}"
+            m0 = f"(({col}${hdr}-1)*12+1)"
+            if mode == 'flow':
+                f = f"=SUM(INDEX({rng},{m0}):INDEX({rng},{m0}+11))"
+            else:
+                f = f"=INDEX({rng},{m0}+11)"
+            S(an, f'{col}{rr}', f, F_FORM, num=('0.0%' if occ else FMT_MONEY), align=RIGHT)
+        metric_rows[label] = rr
+        rr += 1
+
+    # reconciliation: annual NOI total ties to monthly engine total
+    rr += 1
+    S(an, f'B{rr}', 'Check: ΣAnnual NOI − monthly total', F_TOT, align=LEFT)
+    noi_row = metric_rows['Net Operating Income']
+    last_col = get_column_letter(2 + n_years)
+    S(an, f'C{rr}', f"=SUM(C{noi_row}:{last_col}{noi_row})-Operating!$D$38", F_TOT, num=FMT_MONEY, align=RIGHT)
+    repoint(wb, 'AnnualNOICheck', f"'Annual'!$C${rr}")
+
+    an.freeze_panes = 'C' + str(hdr + 1)
+    return {'scenarios': len(SCEN), 'annual_metrics': len(METRICS), 'su_rows': len(su)}
+
+
+PHASES['phaseB'] = phase_b
+
+
+if __name__ == "__main__":
     main()
