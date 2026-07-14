@@ -1,0 +1,29 @@
+FIX 1C VALIDATION — Claude_Dev_Model.xlsx (engine: `formulas`; 0 errors / 52,035 cells)
+
+                              BEFORE (1B/enh)      AFTER (1C)
+  Interest reserve (funded)   $1,141,789     ->    $398,074   (pre-conversion only)
+  Current-pay interest        $0 (all cap.)  ->    $97,652    (levered CF outflow)
+  TDC                         $16,918,971    ->    $16,181,985
+  Realized LTC                66.97%         ->    64.60%     (<= 65% target)
+  Untrended YOC               5.941%         ->    6.212%
+  Development spread          +69.1 bps      ->    +96.2 bps
+  Levered IRR                 20.38%         ->    18.92%
+  Unlevered IRR               12.37%         ->    11.85%
+  DeliverStart / StabMonth    23 / 26        ->    29 / 32
+  Construction End            31             ->    31
+  RefiMonth                   45 (maturity)  ->    33 (stab+lag)
+
+PASS (all validated by recalc + per-cell dump):
+  1C.1 Dashboard Year-1 NOI display row removed; Year1NOI + Returns!C23 intact
+  1C.2 Scenarios unwound; 8 Inputs restored to hard values; 0 #REF; 0 dead names
+  1C.3 final delivery (31) <= con end (31); stabilization (32) >= con end (31)  [2 hard FAIL diags]
+  1C.4 RefiMonth = MAX(Stab,ConEnd)+RefiLag capped at maturity = 33; Recap milestone wired; FAIL diag
+  1C.5 interest capitalized pre-conversion, current-pay after (subtracted in levered CF);
+       reserve drawn to zero (MinReserveBal ~ 0); exhaustion diagnostic
+  1C.6 realized LTC 64.60% <= target 65% (closed form incl. points + interest; NON-circular)
+  1C.7 con sizing DY/DSCR tests repointed to StabNOI_Untrended
+  1C.8 ConLoan C47 index 372 -> ConPayoffMonth+1
+  1C.9 No-Cash-Out=1: perm sized so RefiCashOut = 0 (LTV solved to 50.2%)
+       Sell branch (hold 40 < maturity 45): RefiFlag=0, PermLoan=0, con retired at sale
+  All 21 pre-existing reconciliation checks (D5:D25) still PASS; 5 new engine checks PASS.
+  No circular references; iterative calc OFF.
