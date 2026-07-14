@@ -160,3 +160,34 @@ workbook is patched, not regenerated). Validation record: `logs/remediation_vali
 
 Both refi branches, the No-Cash-Out toggle, all 21 reconciliation checks, and the native
 50,028-cell error scan reconcile with **zero errors**.
+
+---
+
+## 7. Enhancement pass 2 — usability / functionality / presentation (`generator/enhance2.py`)
+
+Three phases, each recalc-validated (native error scan = 0; Base scenario reproduces
+prior outputs exactly).
+
+**Phase A — input usability & error-proofing.**
+8 numeric toggles → human-readable dropdowns (text in C, resolved 0/1 in F, named ranges
+repointed); data validation with range + unit tooltip on **every** numeric input (3 → 97
+rules); input-hint column D (unit, range, driver); Input Sanity block of amber
+soft-warnings (`SanityFlags` count).
+
+**Phase B — functionality.**
+`Annual` tab rolls the monthly engine to Year 1…31 (ties to monthly total, `AnnualNOICheck`
+≈ 0) with a Sources & Uses block (`SU_Check` = 0); year column grouping (outline level 1)
+on all 8 monthly-grid tabs; `Scenarios` tab with a Base/Upside/Downside switcher driving 8
+key assumptions via `INDEX` (Base neutral, Upside/Downside move all outputs); binding sizing
+constraint surfaced (`ConBinding`, `PermBinding`).
+
+**Phase C — formatting & presentation.**
+Dashboard rebuilt as a one-pager (deal header + status banner, untrended YOC / exit cap /
+spread side-by-side, trended NOI separated, returns, Sources & Uses, loan sizing with binding
+constraint, timeline, validation); conditional formatting (PASS/FAIL green/red, amber sanity,
+red negative spread, status banner, occupancy data bars); print/page setup (landscape,
+fit-to-width, repeating headers) on the presentation tabs; consistent number formats; zero
+merged cells.
+
+Workbook now has 17 tabs (adds `Scenarios`, `Annual`). Native error scan across ~50,555
+cells = **0**.

@@ -441,5 +441,141 @@ def phase_b(wb):
 PHASES['phaseB'] = phase_b
 
 
+# ======================================================================  PHASE C
+from openpyxl.formatting.rule import CellIsRule, FormulaRule, DataBarRule
+
+GREEN_FONT = Font(bold=True, color="FF006100")
+RED_FONT = Font(bold=True, color="FF9C0006")
+AMBER_FONT = Font(bold=True, color="FF9C6500")
+GFILL = PatternFill("solid", fgColor="FFC6EFCE")
+RFILL = PatternFill("solid", fgColor="FFFFC7CE")
+AFILL = PatternFill("solid", fgColor="FFFFEB9C")
+FMT_MONEY_D = '$#,##0;($#,##0);"–"'
+FMT_PCT2 = '0.00%'
+FMT_MULT = '0.00"x"'
+NAVY_FILL = PatternFill("solid", fgColor="FF1F3864")
+F_BIG = Font(name="Calibri", size=11, bold=True, color="FF006100")
+F_WHITE_B = Font(name="Calibri", size=11, bold=True, color="FFFFFFFF")
+
+
+def _pf_status(ws, rng):
+    ws.conditional_formatting.add(rng, CellIsRule(operator='equal', formula=['"PASS"'], font=GREEN_FONT, fill=GFILL))
+    ws.conditional_formatting.add(rng, CellIsRule(operator='equal', formula=['"OK"'], font=GREEN_FONT, fill=GFILL))
+    ws.conditional_formatting.add(rng, CellIsRule(operator='equal', formula=['"FAIL"'], font=RED_FONT, fill=RFILL))
+    ws.conditional_formatting.add(rng, CellIsRule(operator='equal', formula=['"WARN"'], font=AMBER_FONT, fill=AFILL))
+    ws.conditional_formatting.add(rng, CellIsRule(operator='equal', formula=['"CHECK"'], font=AMBER_FONT, fill=AFILL))
+
+
+def _kpi(ws, r, label, form, fmt, col_l='B', col_v='C', bold=False):
+    S(ws, f'{col_l}{r}', label, (F_TOT if bold else F_LBL), align=LEFT)
+    S(ws, f'{col_v}{r}', form, (F_TOT if bold else F_LINK), num=fmt, align=RIGHT)
+
+
+def phase_c(wb):
+    # ---- C2: rebuild Dashboard as a one-pager --------------------------------
+    db = wb['Dashboard']
+    for row in db.iter_rows():
+        for c in row:
+            c.value = None; c.fill = PatternFill(fill_type=None); c.border = Border()
+    for col, w in {'A': 3, 'B': 30, 'C': 16, 'D': 3, 'E': 30, 'F': 16, 'G': 3}.items():
+        db.column_dimensions[col].width = w
+    db.sheet_view.showGridLines = False
+    S(db, 'B1', '="Multifamily Development Model  —  "&PropertyName', F_TITLE)
+    S(db, 'B2', '=City&", "&State&"   •   "&TotalUnits&" units   •   "&TEXT(NRSF,"#,##0")&" NRSF   •   Scenario: "&ScenarioSelect', F_HINT)
+    # status banner (row 4) across B:F
+    S(db, 'B4', '=IF(ErrorsFound=0,"✔  ALL CHECKS PASS — model is clean","⚠  "&ErrorsFound&"  ERROR(S) FOUND — REVIEW DIAGNOSTICS")',
+      F_WHITE_B, align=LEFT)
+    for col in 'BCDEF':
+        db.conditional_formatting.add(f'{col}4', FormulaRule(formula=['ErrorsFound=0'], fill=PatternFill("solid", fgColor="FF375623")))
+        db.conditional_formatting.add(f'{col}4', FormulaRule(formula=['ErrorsFound>0'], fill=PatternFill("solid", fgColor="FFC00000")))
+    S(db, 'F4', '="Warnings: "&WarningsFound', F_WHITE_B, align=RIGHT)
+
+    def band(coord, text, col2):
+        S(db, coord, text, F_SECT, FILL_SECT, align=LEFT)
+        for cc in col2: db[f'{cc}{coord[1:]}'].fill = FILL_SECT
+
+    # LEFT column ------------------------------------------------------------
+    band('B6', 'Development Return (untrended)', 'C')
+    _kpi(db, 7, 'Yield on Cost (untrended)', '=YieldOnCost', FMT_PCT2)
+    _kpi(db, 8, 'Exit Cap Rate', '=ExitCapResidential', FMT_PCT2)
+    _kpi(db, 9, 'Development Spread', '=DevSpreadBps', '#,##0" bps"', bold=True)
+    db.conditional_formatting.add('C9', CellIsRule(operator='lessThan', formula=['0'], font=RED_FONT, fill=RFILL))
+    db.conditional_formatting.add('C9', CellIsRule(operator='greaterThanOrEqual', formula=['0'], font=GREEN_FONT))
+    _kpi(db, 10, 'Return on Cost (stabilized)', '=ROCstab', FMT_PCT2)
+    _kpi(db, 11, 'Debt Yield (stab, active loan)', '=DebtYieldStab', FMT_PCT2)
+
+    band('B13', 'Trended Performance (with growth)', 'C')
+    _kpi(db, 14, 'Stabilized NOI (trended)', '=StabNOI', FMT_MONEY_D)
+    _kpi(db, 15, 'Year-1 NOI (trended)', '=Year1NOI', FMT_MONEY_D)
+
+    band('B17', 'Returns', 'C')
+    _kpi(db, 18, 'Levered IRR (net)', '=LevIRR', FMT_PCT2, bold=True)
+    _kpi(db, 19, 'Levered IRR (gross)', '=LevIRRgross', FMT_PCT2)
+    _kpi(db, 20, 'Unlevered IRR (net)', '=UnlevIRR', FMT_PCT2)
+    _kpi(db, 21, 'Levered MOIC (net)', '=LevMOIC', FMT_MULT)
+    _kpi(db, 22, 'Unlevered MOIC (net)', '=UnlevMOIC', FMT_MULT)
+    _kpi(db, 23, 'Static Unlevered IRR (no-growth)', '=StaticUnlevIRR', FMT_PCT2)
+
+    band('B25', 'Timeline (months)', 'C')
+    _kpi(db, 26, 'Construction Start → Maturity', '=ConStart&"  →  "&ConMaturity', '@')
+    _kpi(db, 27, '1st Delivery → Stabilization', '=DeliverStart&"  →  "&StabMonth', '@')
+    _kpi(db, 28, 'Refi / Disposition', '=IF(RefiFlag=1,RefiMonth,0)&"  /  "&DispoMonth', '@')
+
+    # RIGHT column -----------------------------------------------------------
+    band('E6', 'Cost & Basis', 'F')
+    _kpi(db, 7, 'Total Development Cost', '=TDC_Total', FMT_MONEY_D, 'E', 'F')
+    _kpi(db, 8, 'TDC / Unit', '=TDCperUnit', FMT_MONEY_D, 'E', 'F')
+    _kpi(db, 9, 'TDC / NRSF', '=TDCperSF', FMT_MONEY_D, 'E', 'F')
+    _kpi(db, 10, 'Exit Value', '=ExitValue', FMT_MONEY_D, 'E', 'F')
+    _kpi(db, 11, 'Exit Basis / Unit', '=BasisPerUnitExit', FMT_MONEY_D, 'E', 'F')
+
+    band('E13', 'Sources & Uses', 'F')
+    _kpi(db, 14, 'Construction Loan', '=ConLoanTotal', FMT_MONEY_D, 'E', 'F')
+    _kpi(db, 15, 'Equity', '=EquityTotal', FMT_MONEY_D, 'E', 'F')
+    _kpi(db, 16, 'Total Sources', '=ConLoanTotal+EquityTotal', FMT_MONEY_D, 'E', 'F', bold=True)
+    _kpi(db, 17, 'Total Uses (TDC)', '=TDC_Total', FMT_MONEY_D, 'E', 'F', bold=True)
+    _kpi(db, 18, 'Sources − Uses (check)', '=ConLoanTotal+EquityTotal-TDC_Total', FMT_MONEY_D, 'E', 'F')
+
+    band('E20', 'Loan Sizing (binding constraint)', 'F')
+    _kpi(db, 21, 'Refi or Sell', '=IF(RefiFlag=1,"Refinance then hold","Sell during construction")', '@', 'E', 'F', bold=True)
+    _kpi(db, 22, 'Construction Loan — binding', '=ConBinding', '@', 'E', 'F')
+    _kpi(db, 23, 'Con Debt Yield / DSCR', '=ConDYtest&" / "&ConDSCRtest', '@', 'E', 'F')
+    _kpi(db, 24, 'Permanent Loan — binding', '=PermBinding', '@', 'E', 'F')
+    _kpi(db, 25, 'Perm LTV / DSCR', '=PermLTVtest&" / "&PermDSCRtest', '@', 'E', 'F')
+
+    band('E27', 'Validation', 'F')
+    _kpi(db, 28, 'Errors / Warnings / Sanity flags', '=ErrorsFound&" / "&WarningsFound&" / "&SanityFlags', '@', 'E', 'F')
+
+    # ---- C1: conditional formatting on status cells across the workbook ------
+    dg = wb['Diagnostics']
+    _pf_status(dg, 'D4:D25'); _pf_status(dg, 'D27:D40')
+    _pf_status(wb['Proforma'], 'D40:D50')
+    _pf_status(wb['Inputs'], 'E140:E150')
+    _pf_status(wb['ConLoan'], 'C19:C20'); _pf_status(wb['ConLoan'], 'D19:D20')
+    _pf_status(wb['Annual'], 'C5:C40')
+    # occupancy data bars on lease-up curve
+    wb['LeaseUp'].conditional_formatting.add(
+        'E10:NL10', DataBarRule(start_type='num', start_value=0, end_type='num', end_value=1,
+                                color="638EC6", showValue=True))
+
+    # ---- C3: print / page setup on presentation tabs -------------------------
+    for name, area, titles in [('Dashboard', 'B1:F29', '1:2'), ('Proforma', 'B1:H48', '1:2'),
+                               ('Annual', 'B1:AG40', '1:2'), ('Diagnostics', 'B1:G42', '1:3'),
+                               ('Scenarios', 'B1:F16', '1:1')]:
+        ws = wb[name]
+        ws.page_setup.orientation = 'landscape'
+        ws.page_setup.fitToWidth = 1; ws.page_setup.fitToHeight = 0
+        ws.sheet_properties.pageSetUpPr.fitToPage = True
+        ws.print_area = area
+        ws.print_title_rows = titles
+
+    # ---- C4: number-format consistency on presentation tabs ------------------
+    # (engine tabs already carry consistent formats; presentation tabs normalized above.)
+    return {'dashboard_rebuilt': True, 'cf_added': True}
+
+
+PHASES['phaseC'] = phase_c
+
+
 if __name__ == "__main__":
     main()
