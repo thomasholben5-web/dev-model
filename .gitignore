@@ -13,3 +13,4 @@ recalc/out/
 scratch_*.json
 *.calc.json
 build/model_fix*.xlsx
+build/model_wf.xlsx
