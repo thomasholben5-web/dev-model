@@ -15,3 +15,6 @@ scratch_*.json
 build/model_fix*.xlsx
 build/model_wf.xlsx
 build/*.out
+Claude_Dev_Model_latest.xlsx
+Claude_Dev_Model_v2.xlsx
+build/model_sb.xlsx
