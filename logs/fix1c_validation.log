@@ -27,3 +27,17 @@ PASS (all validated by recalc + per-cell dump):
        Sell branch (hold 40 < maturity 45): RefiFlag=0, PermLoan=0, con retired at sale
   All 21 pre-existing reconciliation checks (D5:D25) still PASS; 5 new engine checks PASS.
   No circular references; iterative calc OFF.
+
+---
+INPUTS REORG + TAX DRIVER + STATIC VALUE (recalc-validated, 0 errors / 51,963 cells):
+  - Inputs tab rebuilt as a dense multi-column "Master Input" layout (B1:T44) modeled on
+    the reference underwriting workbook: KPI summary strip on top (Lev/Unlev IRR & MOIC,
+    Untrended YOC, Dev Spread, TDC, TDC/Unit, Static Value, Realized LTC, Debt Yield,
+    Status) + five side-by-side grouped section blocks. All 90 named ranges repointed;
+    outputs identical to prior (YOC 6.212%, LevIRR 18.92%, LTC 64.60%, TDC $16.18M).
+  - "Dispo Tax Driver" dropdown: Reassessed / Imputed (replaces the raw reassess toggle).
+    Both branches reconcile: Imputed ExitValue 26,051,861; Reassessed 26,059,951
+    (Chk_Reassess = 0). Operating-period Value/Income approach kept separate (TaxMethodValue).
+  - Static Value (Untrended NOI / Entry Cap) = StabNOI_Untrended / EntryCapRate =
+    $19,146,214; named StaticValue; shown in the KPI strip, the Derived block, and on the
+    Dashboard. All 26 diagnostics still PASS; Inputs error-scan (F17) retargeted = 0.
